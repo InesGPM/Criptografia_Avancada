@@ -106,3 +106,32 @@ Servidor → Proxy → VLC
 ```
 
 O servidor envia os pacotes UDP para o proxy, que os encaminha para o VLC para reprodução.
+
+##
+
+# DPRG-based Stream Encryption
+
+Na implementação baseada em **DPRG (Deterministic Pseudo Random Generator)** segui um modelo semelhante a **OTP (One-Time Pad)** para cifrar os frames do stream.
+
+O servidor e o proxy partilham previamente uma **chave secreta**. Para cada frame, o servidor usa essa chave juntamente com um **contador de frames** para gerar uma sequência pseudo-aleatória de bytes (keystream). Esse keystream é depois combinado com os dados do frame através de **XOR**, produzindo o frame cifrado.
+
+O pacote enviado pelo servidor contém:
+- o **contador do frame**
+- o **frame cifrado**
+
+Quando o proxy recebe o pacote, usa a **mesma chave secreta** e o **contador recebido** para gerar novamente o mesmo keystream através do DPRG. Aplicando **XOR** entre o keystream e o frame cifrado, o proxy recupera o frame original, que depois é encaminhado para o media player.
+
+### Tolerância a problemas do UDP
+
+Uma vantagem desta abordagem é que **cada pacote pode ser decifrado de forma independente**, pois o keystream é gerado a partir da chave e do contador presente no próprio pacote.
+
+Isto é especialmente importante porque a comunicação usa **UDP**, onde podem ocorrer:
+- perda de pacotes  
+- receção fora de ordem  
+- duplicação de pacotes  
+
+Como o keystream não depende de pacotes anteriores, a perda ou reordenação de pacotes **não quebra a sincronização** entre o servidor e o proxy, apenas o frame correspondente ao pacote perdido é afetado.
+
+### Limitações
+
+Esta solução garante **confidencialidade dos dados**, mas por si só **não garante integridade nem autenticação**. Caso fosse necessário, poderia ser adicionada uma **tag HMAC** aos pacotes para permitir verificar a integridade dos dados recebidos.
