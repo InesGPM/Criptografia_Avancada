@@ -1,0 +1,12 @@
+# Movie files
+hjStreamServer/movies/
+
+# Compiled class files
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Config
+# config.properties
